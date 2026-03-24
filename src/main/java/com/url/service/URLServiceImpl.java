@@ -32,8 +32,12 @@ public class URLServiceImpl implements URLService{
         }
 
         LocalDateTime ldt = LocalDateTime.now();
-        long timeStamp = ldt.toEpochSecond(ZoneOffset.ofTotalSeconds(0));
-        String shortCode = encodeIdByBase62(timeStamp);
+        //  Use nanoseconds instead of seconds
+        long timeStamp = ldt.toInstant(ZoneOffset.UTC).toEpochMilli() * 1_000_000 + ldt.getNano();
+        //  Mix in a random salt to survive same-nanosecond collisions
+        long uniqueSeed = timeStamp ^ (long)(Math.random() * Long.MAX_VALUE);
+        //  Take only the last 8 chars to keep URLs short
+        String shortCode = encodeIdByBase62(Math.abs(uniqueSeed)).substring(0, 8);
 
         URL url = new URL();
         url.setId(timeStamp);
